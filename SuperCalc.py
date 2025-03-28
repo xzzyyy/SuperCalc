@@ -1,6 +1,10 @@
+import os
+import tempfile
 from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, QPushButton
 from PyQt6.QtGui import QPainter, QColor, QPen, QGuiApplication, QBrush
 from PyQt6.QtCore import Qt, QRect
+import cv2
+import easyocr
 
 
 # create recognition class
@@ -11,6 +15,23 @@ class CRecognition:
     def recognize(self, screenshot):
         # choose recognition framework
         # let's use EasyOCR
+        # recognize text on screenshot and output to console
+        reader = easyocr.Reader(['en'])
+
+        # save file to temporary and read with cv2
+        with tempfile.TemporaryDirectory() as temp_dir:
+            scr_path = os.path.join(temp_dir, "screenshot.png")
+            temp_file_path = scr_path
+            screenshot.save(scr_path)
+            image = cv2.imread(temp_file_path)
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
+        results = reader.readtext(image_rgb)
+        # GPU doesn't work
+
+        for bbox, text, confidence in results:
+            print(text)
+
         return [0]
 
 
@@ -63,7 +84,9 @@ class ScreenshotWindow(QWidget):
         rect = QRect(self.start_point, self.end_point).normalized()
         screen = QApplication.primaryScreen()
         screenshot = screen.grabWindow(0, rect.x(), rect.y(), rect.width(), rect.height())
-        screenshot.save("screenshot.png", "png")
+
+        recog = CRecognition()
+        recog.recognize(screenshot)     # TODO find proper place
 
 
 class MainWindow(QMainWindow):
